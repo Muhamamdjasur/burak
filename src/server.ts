@@ -7,3 +7,15 @@
 
 // const person: string = "Jacob";
 // const count: number = 100;
+
+
+// Architectural pattern: MVC, DI, MVP
+
+// Design pattern: Middlware, Decotar
+
+import dotenv from 'dotenv';
+dotenv.config();
+
+// console.log("PORT:", process.env.PORT);
+
+// console.log("MONGO_URL:", process.env.MONGO_URL);
