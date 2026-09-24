@@ -1,3 +1,380 @@
+# 📘 Environment Variable va Yangi Database
+
+## ⚡ Bir qarashda
+
+| # | Mavzu | Bir gapda |
+|---|---|---|
+| 1 | Environment Variable | Maxfiy ma'lumotlarni kodning **tashqarisida** saqlash |
+| 2 | Yangi database | Burak loyihasi uchun **o'ziga xos** MongoDB bazasi ochish |
+
+---
+
+## 1️⃣ Environment Variable nima?
+
+### Muammo
+
+O'tgan darsda shunday yozgan edik:
+
+```ts
+mongoose.connect("mongodb://127.0.0.1:27017/burak");
+```
+
+Manzil to'g'ridan-to'g'ri kod ichida yozilgan. Bu ikkita muammo tug'diradi:
+
+1. Agar bu **parol** yoki **maxfiy kalit** bo'lsa-chi? Kodni GitHub'ga yuklaganingda hamma ko'radi. 🔓
+2. Uyda ishlaganda bir manzil, ishga (production) chiqarganda boshqa manzil kerak bo'ladi. Har safar kodni o'zgartirasanmi?
+
+### Yechim: Environment Variable
+
+Tasavvur qil: sening kalitlaring (uy kaliti, seyf kaliti) bor. Ularni devorga osib qo'ymaysan, **maxsus qutichada**, ko'zdan uzoqda saqlaysan. Kerak bo'lganda o'sha qutidan olasan.
+
+**Environment variable** — bu ham xuddi shunday: maxfiy va o'zgaruvchan ma'lumotlarni kod ichiga emas, **alohida faylga** yozib qo'yamiz.
+
+### `.env` fayli
+
+Loyiha ildizida (`package.json` bilan bir joyda) `.env` nomli fayl yaratamiz:
+
+```
+PORT=3000
+MONGO_URL=mongodb://127.0.0.1:27017/burak
+```
+
+> ⚠️ Bu fayl ichida **bo'sh joy, tirnoq belgisi kerak emas**: `PORT=3000`, `PORT = 3000` emas.
+
+### O'rnatish
+
+```bash
+npm install dotenv
+```
+
+TypeScript bilan ishlasak, turlar kerak emas — `dotenv` o'zida bor.
+
+### Ishlatish
+
+`src/server.ts` faylining **eng boshida**:
+
+```ts
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import mongoose from "mongoose";
+
+const app = express();
+
+const port = process.env.PORT;
+const mongoUrl = process.env.MONGO_URL;
+
+mongoose.connect(mongoUrl as string)
+  .then(() => console.log("MongoDB ga ulandik ✅"));
+
+app.listen(port, () => console.log(`Server ${port}-portda`));
+```
+
+- `process.env.PORT` — `.env` faylidan `PORT` degan qiymatni o'qiydi
+- `dotenv.config()` — `.env` faylini o'qib, `process.env` ichiga joylashtiradi. Shuning uchun bu qator **eng birinchi** turishi kerak, aks holda boshqa qatorlar hali bo'sh qutidan olishga urinadi
+
+### 🔒 Muhim: `.env` ni hech qachon GitHub'ga yubormaymiz!
+
+Loyiha ildizida `.gitignore` nomli fayl bor (yo'q bo'lsa, yarat) va ichiga shuni yoz:
+
+```
+node_modules
+.env
+```
+
+Bu Git'ga "bu fayllarni ko'rmaslikni" buyuradi. Shunda maxfiy ma'lumotlaring xavfsiz qoladi.
+
+### Boshqalar uchun namuna: `.env.example`
+
+Boshqa dasturchi (yoki sen o'zing kelajakda) loyihani ochganda, qanday o'zgaruvchilar kerakligini bilishi uchun, qiymatlarsiz namuna fayl qoldiramiz:
+
+```
+PORT=
+MONGO_URL=
+```
+
+Bu faylni (`.env.example`) GitHub'ga yuklash **mumkin**, chunki ichida maxfiy narsa yo'q.
+
+---
+
+## 2️⃣ Burak uchun yangi database yaratish
+
+MongoDB'da database'ni oldindan "yaratish" shart emas — **birinchi marta ma'lumot yozganingda** o'zi paydo bo'ladi. Xuddi bo'sh papkaga birinchi faylni tashlaganingda, papka "to'lib" boshlagani kabi.
+
+### Agar kompyuteringda MongoDB o'rnatilgan bo'lsa
+
+`.env` faylida database nomini xohlaganingcha o'zgartirasan:
+
+```
+MONGO_URL=mongodb://127.0.0.1:27017/burak_db
+```
+
+`burak_db` — bu yangi database nomi. `mongoose.connect()` shu manzilga ulanganda, MongoDB avtomatik shu nomli bazani yaratadi (birinchi ma'lumot yozilganda).
+
+### Agar bulutdan (MongoDB Atlas) foydalanmoqchi bo'lsang
+
+MongoDB Atlas — bu MongoDB'ni **o'zing o'rnatmasdan**, internetda bepul ishlatish imkonini beruvchi xizmat. Qadamlar:
+
+1. [mongodb.com/cloud/atlas](https://mongodb.com) saytida bepul akkaunt och
+2. Yangi **Cluster** (bazalar guruhi) yarat
+3. **Database Access** bo'limida foydalanuvchi nomi va parol o'rnat
+4. **Network Access** bo'limida o'z IP manzilingga ruxsat ber (yoki test uchun "Allow from anywhere")
+5. **Connect** tugmasini bosib, ulanish manzilini (connection string) nusxa ol — u shunga o'xshaydi:
+
+```
+mongodb+srv://foydalanuvchi:parol@cluster0.mongodb.net/burak_db
+```
+
+6. Shu manzilni `.env` fayliga qo'y:
+
+```
+MONGO_URL=mongodb+srv://foydalanuvchi:parol@cluster0.mongodb.net/burak_db
+```
+
+Kodni o'zgartirish shart emas — `process.env.MONGO_URL` avtomatik yangi manzilni o'qiydi.
+
+---
+
+## 🧩 Hammasi birga
+
+```
+BURAK/
+├─ .env                ← maxfiy, GitHub'ga bormaydi
+├─ .env.example         ← namuna, GitHub'ga boradi
+├─ .gitignore
+├─ package.json
+├─ tsconfig.json
+└─ src/
+   └─ server.ts
+```
+
+```ts
+// src/server.ts
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import mongoose from "mongoose";
+
+const app = express();
+const port = process.env.PORT;
+const mongoUrl = process.env.MONGO_URL as string;
+
+mongoose.connect(mongoUrl)
+  .then(() => console.log("MongoDB ga ulandik ✅"))
+  .catch((xato) => console.log("Xato ❌", xato));
+
+app.get("/", (req, res) => res.send("Salom, Burak!"));
+
+app.listen(port, () => console.log(`Server ${port}-portda`));
+```
+
+---
+
+## 📝 O'zimni tekshiraman
+
+1. Nima uchun manzil va parolni to'g'ridan-to'g'ri kod ichiga yozmaymiz?
+2. `.env` faylini nima uchun `.gitignore`ga qo'shamiz?
+3. Yangi database'ni MongoDB'da qanday "yaratamiz"?
+4. `dotenv.config()` qatori nima uchun faylning **eng boshida** turishi kerak?
+
+
+(======++=====================++===================+=========+=======++======);
+
+# 📘 Express va MongoDB (Mongoose orqali)
+
+## ⚡ Bir qarashda
+
+| # | Mavzu | Bir gapda |
+|---|---|---|
+| 1 | Express | Serverni oson quradigan **yordamchi** |
+| 2 | MongoDB | Ma'lumotlarni saqlaydigan **ombor** |
+| 3 | Mongoose | MongoDB bilan gaplashadigan **tarjimon** |
+
+---
+
+## 1️⃣ Express nima?
+
+Tasavvur qil: sen **restoran** ochmoqchisan. Node.js senga g'isht, sement, hamma narsa beradi — lekin uydan boshlab qurishing kerak. **Express** esa senga tayyor **karkas uy** beradi: eshiklari, xonalari tayyor, sen faqat jihozlab, kerakli xonaga kerakli buyumni qo'yasan.
+
+Ya'ni Express — bu server (dastur) qurishni **osonlashtiradigan** yordamchi kutubxona.
+
+### O'rnatish
+
+Terminalda, loyiha papkasida (`package.json` turgan joyda):
+
+```bash
+npm install express
+```
+
+TypeScript bilan ishlaganda turlar (types) ham kerak:
+
+```bash
+npm install -D @types/express
+```
+
+### Eng oddiy server
+
+```ts
+import express from "express";
+
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Salom, dunyo!");
+});
+
+app.listen(3000, () => {
+  console.log("Server 3000-portda ishga tushdi");
+});
+```
+
+- `app.get("/", ...)` — kimdir brauzerda saytga kirsa, shu funksiya ishlaydi
+- `req` — **so'rov** (kimdir nima so'rayapti)
+- `res` — **javob** (biz unga nima qaytaramiz)
+- `app.listen(3000)` — server 3000-eshikda (port) "qo'ng'iroqlarni kutib" turadi
+
+> 🚪 **Port** — bu uyning eshigi raqami. Kompyuterda ko'plab eshik bor, server o'shalardan birida turadi.
+
+---
+
+## 2️⃣ MongoDB nima?
+
+Oddiy ma'lumotlar bazasi (masalan, Excel jadvali)da hammasi **qat'iy ustunlarga** bo'lingan: ism, yosh, telefon — hammaning ustunlari bir xil bo'lishi shart.
+
+**MongoDB** esa boshqacha ishlaydi: u ma'lumotni **quti (JSON'ga o'xshash) ichida** saqlaydi, va har bir quti bir-biridan farq qilishi mumkin:
+
+```json
+{ "ism": "Ali", "yosh": 10 }
+{ "ism": "Vali", "yosh": 12, "sevimliRang": "ko'k" }
+```
+
+Ikkalasi ham "odam" degan quti, lekin ikkinchisida qo'shimcha maydon bor — va bu **mumkin**. Shuning uchun MongoDB tez o'zgaradigan loyihalarga juda qulay.
+
+### Atamalar (Excel bilan solishtiramiz)
+
+| Excel | MongoDB |
+|---|---|
+| Fayl | **Database** (ma'lumotlar bazasi) |
+| Varaq (list) | **Collection** (to'plam) |
+| Qator | **Document** (hujjat) |
+
+---
+
+## 3️⃣ Mongoose nima?
+
+Node.js dasturi MongoDB bilan **to'g'ridan-to'g'ri** gaplasha olmaydi, chunki ular boshqa-boshqa "tilda" so'zlashadi. **Mongoose** — bu ikkalasi orasidagi **tarjimon**.
+
+U yana bitta foyda beradi: **Schema** (sxema) orqali har bir "quti" qanday ko'rinishda bo'lishini oldindan belgilab qo'yasan — xuddi 3-darsdagi `interface` kabi.
+
+### O'rnatish
+
+```bash
+npm install mongoose
+```
+
+### 1-qadam: Ulanish
+
+`src/server.ts` yoki alohida `db.ts` faylida:
+
+```ts
+import mongoose from "mongoose";
+
+mongoose.connect("mongodb://127.0.0.1:27017/burak")
+  .then(() => console.log("MongoDB ga ulandik ✅"))
+  .catch((xato) => console.log("Ulanishda xato ❌", xato));
+```
+
+- `mongodb://127.0.0.1:27017` — kompyuteringizda ishlab turgan MongoDB manzili
+- `burak` — database nomi (o'zing tanlaysan, mavjud bo'lmasa, o'zi yaratiladi)
+
+> 💻 Bu manzil **kompyuteringda o'rnatilgan** MongoDB uchun. Agar bulutdagi (MongoDB Atlas) bazadan foydalansang, manzil boshqacha bo'ladi — bu haqda alohida gaplashamiz.
+
+### 2-qadam: Schema va Model yasash
+
+**Schema** = "anketa" (nimalar bo'lishi kerakligini aytadi)
+**Model** = shu anketa asosida ma'lumot yaratish/o'qish vositasi
+
+```ts
+import mongoose from "mongoose";
+
+// 1. Anketa
+const odamSchema = new mongoose.Schema({
+  ism: { type: String, required: true },
+  yosh: { type: Number, required: true },
+});
+
+// 2. Model (anketadan foydalanadigan vosita)
+const Odam = mongoose.model("Odam", odamSchema);
+
+export default Odam;
+```
+
+### 3-qadam: Ma'lumot qo'shish va olish
+
+```ts
+// Yangi odam qo'shish
+const yangiOdam = new Odam({ ism: "Ali", yosh: 10 });
+await yangiOdam.save();
+
+// Hamma odamlarni olish
+const hammasi = await Odam.find();
+console.log(hammasi);
+```
+
+---
+
+## 🧩 Hammasi birga (kichik misol)
+
+```ts
+import express from "express";
+import mongoose from "mongoose";
+
+const app = express();
+app.use(express.json()); // kelgan ma'lumotni JSON deb tushunish uchun
+
+// Mongoose bilan ulanish
+mongoose.connect("mongodb://127.0.0.1:27017/burak")
+  .then(() => console.log("MongoDB ga ulandik ✅"));
+
+// Schema va Model
+const odamSchema = new mongoose.Schema({
+  ism: { type: String, required: true },
+  yosh: { type: Number, required: true },
+});
+const Odam = mongoose.model("Odam", odamSchema);
+
+// Yangi odam qo'shadigan yo'l (route)
+app.post("/odam", async (req, res) => {
+  const yangiOdam = new Odam(req.body);
+  await yangiOdam.save();
+  res.send(yangiOdam);
+});
+
+// Hamma odamlarni ko'rsatadigan yo'l
+app.get("/odam", async (req, res) => {
+  const hammasi = await Odam.find();
+  res.send(hammasi);
+});
+
+app.listen(3000, () => console.log("Server 3000-portda"));
+```
+
+---
+
+## 📝 O'zimni tekshiraman
+
+1. Express nima uchun kerak?
+2. MongoDB'da "Collection" Excel'dagi nimaga o'xshaydi?
+3. Mongoose nima ish qiladi?
+4. Schema bilan Model orasidagi farq nima?
+
+
+
+
+(=================================================================================================================);
+
 # 📘 TypeScript va Patternlar
 
 **1 ta dars = 5 ta reja.** Qaytganingda shu faylni och, bir qarashda hammasi esingga tushadi.
@@ -179,6 +556,9 @@ Ikki xil bo'ladi:
 Klassik design patternlar jami 23 ta (Gang of Four kitobidan). Ularni birma-bir o'rganamiz.
 
 ---
+
+
+(==================================================================================);
 
 
 
