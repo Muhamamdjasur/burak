@@ -1,1 +1,14 @@
-console.log("Hello World!");
+function getSquareNumbers(numbers: number[]) {
+    let result = [];
+
+    for (let number of numbers) {
+        result.push({
+            number: number,
+            square: number * number
+        });
+    }
+
+    return result;
+}
+
+console.log(getSquareNumbers([1, 2, 3]));
