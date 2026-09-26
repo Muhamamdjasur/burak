@@ -1,188 +1,4 @@
-# 📘 Environment Variable va Yangi Database
-
-## ⚡ Bir qarashda
-
-| # | Mavzu | Bir gapda |
-|---|---|---|
-| 1 | Environment Variable | Maxfiy ma'lumotlarni kodning **tashqarisida** saqlash |
-| 2 | Yangi database | Burak loyihasi uchun **o'ziga xos** MongoDB bazasi ochish |
-
----
-
-## 1️⃣ Environment Variable nima?
-
-### Muammo
-
-O'tgan darsda shunday yozgan edik:
-
-```ts
-mongoose.connect("mongodb://127.0.0.1:27017/burak");
-```
-
-Manzil to'g'ridan-to'g'ri kod ichida yozilgan. Bu ikkita muammo tug'diradi:
-
-1. Agar bu **parol** yoki **maxfiy kalit** bo'lsa-chi? Kodni GitHub'ga yuklaganingda hamma ko'radi. 🔓
-2. Uyda ishlaganda bir manzil, ishga (production) chiqarganda boshqa manzil kerak bo'ladi. Har safar kodni o'zgartirasanmi?
-
-### Yechim: Environment Variable
-
-Tasavvur qil: sening kalitlaring (uy kaliti, seyf kaliti) bor. Ularni devorga osib qo'ymaysan, **maxsus qutichada**, ko'zdan uzoqda saqlaysan. Kerak bo'lganda o'sha qutidan olasan.
-
-**Environment variable** — bu ham xuddi shunday: maxfiy va o'zgaruvchan ma'lumotlarni kod ichiga emas, **alohida faylga** yozib qo'yamiz.
-
-### `.env` fayli
-
-Loyiha ildizida (`package.json` bilan bir joyda) `.env` nomli fayl yaratamiz:
-
-```
-PORT=3000
-MONGO_URL=mongodb://127.0.0.1:27017/burak
-```
-
-> ⚠️ Bu fayl ichida **bo'sh joy, tirnoq belgisi kerak emas**: `PORT=3000`, `PORT = 3000` emas.
-
-### O'rnatish
-
-```bash
-npm install dotenv
-```
-
-TypeScript bilan ishlasak, turlar kerak emas — `dotenv` o'zida bor.
-
-### Ishlatish
-
-`src/server.ts` faylining **eng boshida**:
-
-```ts
-import dotenv from "dotenv";
-dotenv.config();
-
-import express from "express";
-import mongoose from "mongoose";
-
-const app = express();
-
-const port = process.env.PORT;
-const mongoUrl = process.env.MONGO_URL;
-
-mongoose.connect(mongoUrl as string)
-  .then(() => console.log("MongoDB ga ulandik ✅"));
-
-app.listen(port, () => console.log(`Server ${port}-portda`));
-```
-
-- `process.env.PORT` — `.env` faylidan `PORT` degan qiymatni o'qiydi
-- `dotenv.config()` — `.env` faylini o'qib, `process.env` ichiga joylashtiradi. Shuning uchun bu qator **eng birinchi** turishi kerak, aks holda boshqa qatorlar hali bo'sh qutidan olishga urinadi
-
-### 🔒 Muhim: `.env` ni hech qachon GitHub'ga yubormaymiz!
-
-Loyiha ildizida `.gitignore` nomli fayl bor (yo'q bo'lsa, yarat) va ichiga shuni yoz:
-
-```
-node_modules
-.env
-```
-
-Bu Git'ga "bu fayllarni ko'rmaslikni" buyuradi. Shunda maxfiy ma'lumotlaring xavfsiz qoladi.
-
-### Boshqalar uchun namuna: `.env.example`
-
-Boshqa dasturchi (yoki sen o'zing kelajakda) loyihani ochganda, qanday o'zgaruvchilar kerakligini bilishi uchun, qiymatlarsiz namuna fayl qoldiramiz:
-
-```
-PORT=
-MONGO_URL=
-```
-
-Bu faylni (`.env.example`) GitHub'ga yuklash **mumkin**, chunki ichida maxfiy narsa yo'q.
-
----
-
-## 2️⃣ Burak uchun yangi database yaratish
-
-MongoDB'da database'ni oldindan "yaratish" shart emas — **birinchi marta ma'lumot yozganingda** o'zi paydo bo'ladi. Xuddi bo'sh papkaga birinchi faylni tashlaganingda, papka "to'lib" boshlagani kabi.
-
-### Agar kompyuteringda MongoDB o'rnatilgan bo'lsa
-
-`.env` faylida database nomini xohlaganingcha o'zgartirasan:
-
-```
-MONGO_URL=mongodb://127.0.0.1:27017/burak_db
-```
-
-`burak_db` — bu yangi database nomi. `mongoose.connect()` shu manzilga ulanganda, MongoDB avtomatik shu nomli bazani yaratadi (birinchi ma'lumot yozilganda).
-
-### Agar bulutdan (MongoDB Atlas) foydalanmoqchi bo'lsang
-
-MongoDB Atlas — bu MongoDB'ni **o'zing o'rnatmasdan**, internetda bepul ishlatish imkonini beruvchi xizmat. Qadamlar:
-
-1. [mongodb.com/cloud/atlas](https://mongodb.com) saytida bepul akkaunt och
-2. Yangi **Cluster** (bazalar guruhi) yarat
-3. **Database Access** bo'limida foydalanuvchi nomi va parol o'rnat
-4. **Network Access** bo'limida o'z IP manzilingga ruxsat ber (yoki test uchun "Allow from anywhere")
-5. **Connect** tugmasini bosib, ulanish manzilini (connection string) nusxa ol — u shunga o'xshaydi:
-
-```
-mongodb+srv://foydalanuvchi:parol@cluster0.mongodb.net/burak_db
-```
-
-6. Shu manzilni `.env` fayliga qo'y:
-
-```
-MONGO_URL=mongodb+srv://foydalanuvchi:parol@cluster0.mongodb.net/burak_db
-```
-
-Kodni o'zgartirish shart emas — `process.env.MONGO_URL` avtomatik yangi manzilni o'qiydi.
-
----
-
-## 🧩 Hammasi birga
-
-```
-BURAK/
-├─ .env                ← maxfiy, GitHub'ga bormaydi
-├─ .env.example         ← namuna, GitHub'ga boradi
-├─ .gitignore
-├─ package.json
-├─ tsconfig.json
-└─ src/
-   └─ server.ts
-```
-
-```ts
-// src/server.ts
-import dotenv from "dotenv";
-dotenv.config();
-
-import express from "express";
-import mongoose from "mongoose";
-
-const app = express();
-const port = process.env.PORT;
-const mongoUrl = process.env.MONGO_URL as string;
-
-mongoose.connect(mongoUrl)
-  .then(() => console.log("MongoDB ga ulandik ✅"))
-  .catch((xato) => console.log("Xato ❌", xato));
-
-app.get("/", (req, res) => res.send("Salom, Burak!"));
-
-app.listen(port, () => console.log(`Server ${port}-portda`));
-```
-
----
-
-## 📝 O'zimni tekshiraman
-
-1. Nima uchun manzil va parolni to'g'ridan-to'g'ri kod ichiga yozmaymiz?
-2. `.env` faylini nima uchun `.gitignore`ga qo'shamiz?
-3. Yangi database'ni MongoDB'da qanday "yaratamiz"?
-4. `dotenv.config()` qatori nima uchun faylning **eng boshida** turishi kerak?
-
-
-(======++=====================++===================+=========+=======++======);
-
-# 📘 Express va MongoDB (Mongoose orqali)
+| 52 | # 📘 Express va MongoDB (Mongoose orqali)
 
 ## ⚡ Bir qarashda
 
@@ -373,9 +189,198 @@ app.listen(3000, () => console.log("Server 3000-portda"));
 
 
 
+
+
+| 51 | # 📘 Environment Variable va Yangi Database
+
+## ⚡ Bir qarashda
+
+| # | Mavzu | Bir gapda |
+|---|---|---|
+| 1 | Environment Variable | Maxfiy ma'lumotlarni kodning **tashqarisida** saqlash |
+| 2 | Yangi database | Burak loyihasi uchun **o'ziga xos** MongoDB bazasi ochish |
+
+---
+
+## 1️⃣ Environment Variable nima?
+
+### Muammo
+
+O'tgan darsda shunday yozgan edik:
+
+```ts
+mongoose.connect("mongodb://127.0.0.1:27017/burak");
+```
+
+Manzil to'g'ridan-to'g'ri kod ichida yozilgan. Bu ikkita muammo tug'diradi:
+
+1. Agar bu **parol** yoki **maxfiy kalit** bo'lsa-chi? Kodni GitHub'ga yuklaganingda hamma ko'radi. 🔓
+2. Uyda ishlaganda bir manzil, ishga (production) chiqarganda boshqa manzil kerak bo'ladi. Har safar kodni o'zgartirasanmi?
+
+### Yechim: Environment Variable
+
+Tasavvur qil: sening kalitlaring (uy kaliti, seyf kaliti) bor. Ularni devorga osib qo'ymaysan, **maxsus qutichada**, ko'zdan uzoqda saqlaysan. Kerak bo'lganda o'sha qutidan olasan.
+
+**Environment variable** — bu ham xuddi shunday: maxfiy va o'zgaruvchan ma'lumotlarni kod ichiga emas, **alohida faylga** yozib qo'yamiz.
+
+### `.env` fayli
+
+Loyiha ildizida (`package.json` bilan bir joyda) `.env` nomli fayl yaratamiz:
+
+```
+PORT=3000
+MONGO_URL=mongodb://127.0.0.1:27017/burak
+```
+
+> ⚠️ Bu fayl ichida **bo'sh joy, tirnoq belgisi kerak emas**: `PORT=3000`, `PORT = 3000` emas.
+
+### O'rnatish
+
+```bash
+npm install dotenv
+```
+
+TypeScript bilan ishlasak, turlar kerak emas — `dotenv` o'zida bor.
+
+### Ishlatish
+
+`src/server.ts` faylining **eng boshida**:
+
+```ts
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import mongoose from "mongoose";
+
+const app = express();
+
+const port = process.env.PORT;
+const mongoUrl = process.env.MONGO_URL;
+
+mongoose.connect(mongoUrl as string)
+  .then(() => console.log("MongoDB ga ulandik ✅"));
+
+app.listen(port, () => console.log(`Server ${port}-portda`));
+```
+
+- `process.env.PORT` — `.env` faylidan `PORT` degan qiymatni o'qiydi
+- `dotenv.config()` — `.env` faylini o'qib, `process.env` ichiga joylashtiradi. Shuning uchun bu qator **eng birinchi** turishi kerak, aks holda boshqa qatorlar hali bo'sh qutidan olishga urinadi
+
+### 🔒 Muhim: `.env` ni hech qachon GitHub'ga yubormaymiz!
+
+Loyiha ildizida `.gitignore` nomli fayl bor (yo'q bo'lsa, yarat) va ichiga shuni yoz:
+
+```
+node_modules
+.env
+```
+
+Bu Git'ga "bu fayllarni ko'rmaslikni" buyuradi. Shunda maxfiy ma'lumotlaring xavfsiz qoladi.
+
+### Boshqalar uchun namuna: `.env.example`
+
+Boshqa dasturchi (yoki sen o'zing kelajakda) loyihani ochganda, qanday o'zgaruvchilar kerakligini bilishi uchun, qiymatlarsiz namuna fayl qoldiramiz:
+
+```
+PORT=
+MONGO_URL=
+```
+
+Bu faylni (`.env.example`) GitHub'ga yuklash **mumkin**, chunki ichida maxfiy narsa yo'q.
+
+---
+
+## 2️⃣ Burak uchun yangi database yaratish
+
+MongoDB'da database'ni oldindan "yaratish" shart emas — **birinchi marta ma'lumot yozganingda** o'zi paydo bo'ladi. Xuddi bo'sh papkaga birinchi faylni tashlaganingda, papka "to'lib" boshlagani kabi.
+
+### Agar kompyuteringda MongoDB o'rnatilgan bo'lsa
+
+`.env` faylida database nomini xohlaganingcha o'zgartirasan:
+
+```
+MONGO_URL=mongodb://127.0.0.1:27017/burak_db
+```
+
+`burak_db` — bu yangi database nomi. `mongoose.connect()` shu manzilga ulanganda, MongoDB avtomatik shu nomli bazani yaratadi (birinchi ma'lumot yozilganda).
+
+### Agar bulutdan (MongoDB Atlas) foydalanmoqchi bo'lsang
+
+MongoDB Atlas — bu MongoDB'ni **o'zing o'rnatmasdan**, internetda bepul ishlatish imkonini beruvchi xizmat. Qadamlar:
+
+1. [mongodb.com/cloud/atlas](https://mongodb.com) saytida bepul akkaunt och
+2. Yangi **Cluster** (bazalar guruhi) yarat
+3. **Database Access** bo'limida foydalanuvchi nomi va parol o'rnat
+4. **Network Access** bo'limida o'z IP manzilingga ruxsat ber (yoki test uchun "Allow from anywhere")
+5. **Connect** tugmasini bosib, ulanish manzilini (connection string) nusxa ol — u shunga o'xshaydi:
+
+```
+mongodb+srv://foydalanuvchi:parol@cluster0.mongodb.net/burak_db
+```
+
+6. Shu manzilni `.env` fayliga qo'y:
+
+```
+MONGO_URL=mongodb+srv://foydalanuvchi:parol@cluster0.mongodb.net/burak_db
+```
+
+Kodni o'zgartirish shart emas — `process.env.MONGO_URL` avtomatik yangi manzilni o'qiydi.
+
+---
+
+## 🧩 Hammasi birga
+
+```
+BURAK/
+├─ .env                ← maxfiy, GitHub'ga bormaydi
+├─ .env.example         ← namuna, GitHub'ga boradi
+├─ .gitignore
+├─ package.json
+├─ tsconfig.json
+└─ src/
+   └─ server.ts
+```
+
+```ts
+// src/server.ts
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import mongoose from "mongoose";
+
+const app = express();
+const port = process.env.PORT;
+const mongoUrl = process.env.MONGO_URL as string;
+
+mongoose.connect(mongoUrl)
+  .then(() => console.log("MongoDB ga ulandik ✅"))
+  .catch((xato) => console.log("Xato ❌", xato));
+
+app.get("/", (req, res) => res.send("Salom, Burak!"));
+
+app.listen(port, () => console.log(`Server ${port}-portda`));
+```
+
+---
+
+## 📝 O'zimni tekshiraman
+
+1. Nima uchun manzil va parolni to'g'ridan-to'g'ri kod ichiga yozmaymiz?
+2. `.env` faylini nima uchun `.gitignore`ga qo'shamiz?
+3. Yangi database'ni MongoDB'da qanday "yaratamiz"?
+4. `dotenv.config()` qatori nima uchun faylning **eng boshida** turishi kerak?
+
+
+(======++=====================++===================+=========+=======++======);
+
+
+
+
 (=================================================================================================================);
 
-# 📘 TypeScript va Patternlar
+| 50 | # 📘 TypeScript va Patternlar
 
 **1 ta dars = 5 ta reja.** Qaytganingda shu faylni och, bir qarashda hammasi esingga tushadi.
 
