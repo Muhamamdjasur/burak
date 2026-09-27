@@ -1,6 +1,564 @@
-| 52 | # 📘 Express va MongoDB (Mongoose orqali)
+
+
+# | 54 | Member -- Scheme Model 📘 Service qatlami va Mongoose (Schema, Model, Query)
 
 ## ⚡ Bir qarashda
+
+| # | Mavzu | Bir gapda |
+|---|---|---|
+| 1 | Member Service | Controller bilan Model orasidagi **miyaga** o'xshagan qatlam |
+| 2 | Schema / Model / Query | Anketa / Anketa asosidagi vosita / o'sha vosita bilan berilgan **buyruq** |
+| 3 | Member Schema | Member uchun anketani yozib chiqamiz |
+
+---
+
+## 1️⃣ Member Service nima?
+
+### Eslatma: hozirgi oqim
+
+O'tgan darsda shu qolipni qurgan edik:
+
+```
+Router → Controller → Model → baza
+```
+
+Bu kichik loyiha uchun yetarli. Lekin Controller ichida **ko'p mantiq** (masalan: "yosh 18 dan katta bo'lsin", "email band bo'lmasin", "parolni shifrlash kerak") to'planib qolsa, Controller ham **shishib ketadi** — xuddi bitta xonaga hammasini joylashtirgan Router muammosi kabi!
+
+### Yechim: Service qatlami
+
+**Restoran misolida:**
+
+| Kim | Vazifasi |
+|---|---|
+| Qorovul (Router) | Kelgan odamni to'g'ri bo'limga yo'naltiradi |
+| Ofitsiant (Controller) | Buyurtmani oladi, mijoz bilan gaplashadi |
+| **Oshpaz (Service)** | Taomni **haqiqatda tayyorlaydi** — retsept, texnika shu yerda |
+| Ombor (Model) | Kerakli mahsulotni beradi/saqlaydi |
+
+Ofitsiant (Controller) o'zi **ovqat pishirmaydi** — u faqat buyurtmani oshpazga (Service) yetkazadi, oshpaz esa **qanday pishirishni** biladi.
+
+### Yangi oqim
+
+```
+Router → Controller → Service → Model → baza
+```
+
+- **Controller** — faqat so'rovni qabul qiladi va javob qaytaradi (yupqa qatlam)
+- **Service** — **asosiy mantiq** shu yerda: tekshirish, hisoblash, qoidalar
+- **Model** — bazaga ma'lumot yozish/o'qish
+
+### Kod bilan
+
+**`src/services/MemberService.ts`:**
+
+```ts
+import Member from "../models/Member";
+
+class MemberService {
+  // Yangi a'zo yaratish
+  public async createMember(data: { ism: string; email: string }) {
+    // Mana shu yerda "mantiq" bo'ladi, masalan tekshiruv:
+    if (!data.email.includes("@")) {
+      throw new Error("Email noto'g'ri formatda");
+    }
+
+    const yangiMember = new Member(data);
+    return await yangiMember.save();
+  }
+
+  // Hamma a'zolarni olish
+  public async getMembers() {
+    return await Member.find();
+  }
+}
+
+export default new MemberService();
+```
+
+**`src/controllers/memberController.ts`** (endi yupqa bo'ladi):
+
+```ts
+import { Request, Response } from "express";
+import MemberService from "../services/MemberService";
+
+export const createMember = async (req: Request, res: Response) => {
+  try {
+    const yangiMember = await MemberService.createMember(req.body);
+    res.send(yangiMember);
+  } catch (xato: any) {
+    res.status(400).send({ xabar: xato.message });
+  }
+};
+
+export const getMembers = async (req: Request, res: Response) => {
+  const hammasi = await MemberService.getMembers();
+  res.send(hammasi);
+};
+```
+
+> 🔍 **Nega bu foydali?** Agar ertaga mobil ilova ham shu mantiqni ishlatmoqchi bo'lsa, Controller'ni yozmasdan, to'g'ridan-to'g'ri **Service**ni chaqirsa bo'ladi. Mantiq **bir joyda**, takrorlanmaydi.
+
+---
+
+## 2️⃣ Mongoose'da Schema, Model, Query
+
+Bu uchtasi ko'p chalkashtiriladi, shuning uchun **kutubxona** misolida tushuntiramiz.
+
+| Atama | Kutubxonada | Vazifasi |
+|---|---|---|
+| **Schema** | Kitob katalogining **qoidasi** ("har bir kitobda: nomi, muallifi, yili bo'lishi shart") | Ma'lumot qanday ko'rinishda bo'lishini belgilaydi |
+| **Model** | Kutubxonachi | Qoidaga asoslanib, kitob **qo'shadi, qidiradi, o'chiradi** |
+| **Query** | Kutubxonachiga bergan **so'rov** ("menga 2020-yilgi kitoblarni toping") | Ma'lum shartlar bilan ma'lumot so'rash |
+
+### Schema — qoida
+
+```ts
+const memberSchema = new mongoose.Schema({
+  ism: { type: String, required: true },
+  yosh: { type: Number },
+});
+```
+
+### Model — qoida asosidagi vosita
+
+```ts
+const Member = mongoose.model("Member", memberSchema);
+```
+
+Bu bilan endi `Member` degan **vosita** paydo bo'ldi, u orqali bazaga murojaat qilamiz.
+
+### Query — vosita orqali buyruq berish
+
+```ts
+// Hammasini olish
+await Member.find();
+
+// Shart bilan olish: yoshi 18 dan katta bo'lganlar
+await Member.find({ yosh: { $gt: 18 } });
+
+// Bittasini olish
+await Member.findOne({ ism: "Ali" });
+
+// ID orqali olish
+await Member.findById("123");
+
+// Yangilash
+await Member.findByIdAndUpdate("123", { yosh: 20 });
+
+// O'chirish
+await Member.findByIdAndDelete("123");
+```
+
+> 💡 **`$gt`** — "greater than" (kattaroq) degani. Mongoose'da shunga o'xshash belgilar bor: `$lt` (kichikroq), `$eq` (teng), `$in` (ro'yxatda bor).
+
+**Xulosa formulasi:**
+
+```
+Schema (qoida) → Model (qoida asosidagi vosita) → Query (vosita bilan buyruq)
+```
+
+---
+
+## 3️⃣ Member uchun to'liq Schema yasaymiz
+
+Endi hammasini birlashtirib, **haqiqiy** Member schema'sini yozamiz — oddiy emas, amaliyotda ishlatiladigan darajada.
+
+**`src/models/Member.ts`:**
+
+```ts
+import mongoose from "mongoose";
+
+const memberSchema = new mongoose.Schema(
+  {
+    ism: {
+      type: String,
+      required: true,
+      minlength: 2,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true, // ikkita bir xil email bo'lolmaydi
+    },
+    parol: {
+      type: String,
+      required: true,
+    },
+    yosh: {
+      type: Number,
+      default: 0, // agar berilmasa, 0 bo'ladi
+    },
+    holat: {
+      type: String,
+      enum: ["FAOL", "BLOKLANGAN"], // faqat shu ikkitasidan biri bo'lishi mumkin
+      default: "FAOL",
+    },
+  },
+  {
+    timestamps: true, // createdAt va updatedAt avtomatik qo'shiladi
+  }
+);
+
+const Member = mongoose.model("Member", memberSchema);
+export default Member;
+```
+
+### Yangi qoidalarni tushuntirib o'tamiz
+
+| Qoida | Ma'nosi |
+|---|---|
+| `minlength: 2` | Ism kamida 2 harfdan iborat bo'lishi kerak |
+| `unique: true` | Bu maydon **takrorlanmasligi** kerak (email band bo'lsa, xato beradi) |
+| `default: 0` | Qiymat berilmasa, shu qiymat o'zi qo'yiladi |
+| `enum: [...]` | Faqat ro'yxatdagi qiymatlardan **biri** bo'lishi mumkin |
+| `timestamps: true` | Mongoose o'zi `createdAt` (yaratilgan vaqt) va `updatedAt` (yangilangan vaqt) qo'shadi |
+
+> 📋 Bu — xuddi maktabga hujjat topshirishga o'xshaydi: ba'zi maydonlar **majburiy** (`required`), ba'zilari **o'z-o'zidan to'ldiriladi** (`default`), ba'zilari esa **faqat ro'yxatdan tanlanadi** (`enum`).
+
+---
+
+## 🧩 Hammasi birga
+
+```
+src/
+├─ models/
+│   └─ Member.ts          ← Schema + Model
+├─ services/
+│   └─ MemberService.ts    ← Asosiy mantiq
+├─ controllers/
+│   └─ memberController.ts ← Yupqa, faqat so'rov/javob
+└─ routers/
+    └─ memberRouter.ts
+```
+
+```
+Router → Controller → Service → Model (Schema orqali) → Query → baza
+```
+
+---
+
+## 📝 O'zimni tekshiraman
+
+1. Service qatlami nima uchun kerak, Controller o'zi mantiqni bajarsa bo'lmaydimi?
+2. Schema, Model va Query orasidagi farqni o'z so'zing bilan tushuntir
+3. `unique: true` va `default` orasidagi farq nima?
+4. `enum` nima uchun ishlatiladi, misol kelt
+
+
+
+# | 53 | Router and Controller 📘 Router, MVC va Controllerlar
+
+## ⚡ Bir qarashda
+
+| # | Mavzu | Bir gapda |
+|---|---|---|
+| 1 | Router | Har bir manzilni **kerakli xonaga** yo'naltiruvchi yo'lboshchi |
+| 2 | MVC pattern | Loyihani **3 bo'limga** bo'lib, tartibli qilish usuli |
+| 3 | Member controller | Foydalanuvchilar (a'zolar) bilan ishlaydigan bo'lim |
+| 4 | Restoran controller | Restoranlar bilan ishlaydigan bo'lim |
+
+---
+
+## 1️⃣ Router nima?
+
+### Muammo
+
+`server.ts` faylida hammasini yozsang, u juda **shishib ketadi**:
+
+```ts
+app.get("/odam", ...)
+app.post("/odam", ...)
+app.get("/restoran", ...)
+app.post("/restoran", ...)
+app.delete("/restoran/:id", ...)
+// ... yana 50 ta qator
+```
+
+Bu xuddi **bitta xonada** oshxona, yotoqxona, hammom — hammasini joylashtirishga o'xshaydi. Noqulay!
+
+### Yechim: Router
+
+**Router** — bu uyning **har bir xonasiga alohida eshik** qo'yish. Har bir mavzu (odamlar, restoranlar) o'z faylida, o'z "kichik serverida" yashaydi, keyin katta serverga **ulanadi**.
+
+### Qanday ishlaydi?
+
+```
+so'rov keladi → server.ts → tegishli Router → tegishli funksiya → javob
+```
+
+Xuddi katta binoning **qorovuli** kabi: kimdir kelsa, "sizga qaysi xona kerak?" deb so'raydi va o'sha xonaga yo'naltiradi.
+
+### Kod bilan
+
+**`src/routers/odamRouter.ts`:**
+
+```ts
+import { Router } from "express";
+
+const router = Router();
+
+router.get("/", (req, res) => {
+  res.send("Hamma odamlar");
+});
+
+router.post("/", (req, res) => {
+  res.send("Yangi odam qo'shildi");
+});
+
+export default router;
+```
+
+**`src/server.ts`:**
+
+```ts
+import express from "express";
+import odamRouter from "./routers/odamRouter";
+
+const app = express();
+
+app.use("/odam", odamRouter); // "/odam" bilan boshlangan hamma so'rov shu yerga boradi
+
+app.listen(3000);
+```
+
+Endi `GET /odam` so'rovi kelsa, Express avtomatik `odamRouter.ts` ichidagi `router.get("/", ...)` ni ishga tushiradi. Manzil (`/odam`) va ichki yo'l (`/`) qo'shilib, **to'liq manzil** hosil bo'ladi.
+
+---
+
+## 2️⃣ MVC pattern (eslatma + chuqurroq)
+
+Oldingi darsda restoran misolida ko'rgan edik. Endi kodga tushiramiz.
+
+| Harf | Nomi | Vazifasi | Restoranda |
+|---|---|---|---|
+| **M** | Model | Ma'lumotni saqlash qoidasi (Schema) | Oshxona ombori |
+| **V** | View | Foydalanuvchiga ko'rinadigan javob (bizda — JSON) | Dasturxon |
+| **C** | Controller | Ish mantig'i: nima qilish kerakligini **hal qiladi** | Ofitsiant |
+
+### Nega kerak?
+
+Agar hammasini bitta faylga yozsang, keyinchalik **bittasini topib, tuzatish** qiynchilik bo'ladi. MVC esa har bir narsani **o'z joyiga** qo'yadi — xuddi kiyimlaringni javonga tartib bilan terib qo'yganingdek, keyin kerakli kiyimni tez topasan.
+
+### Papka tuzilmasi
+
+```
+src/
+├─ models/
+│   ├─ Odam.ts          ← M (schema)
+│   └─ Restoran.ts
+├─ controllers/
+│   ├─ odamController.ts   ← C (mantiq)
+│   └─ restoranController.ts
+├─ routers/
+│   ├─ odamRouter.ts       ← qaysi manzil qaysi controllerga boradi
+│   └─ restoranRouter.ts
+└─ server.ts
+```
+
+**Oqim:**
+
+```
+so'rov → Router → Controller → Model (bazadan olish/yozish) → Controller → javob (View)
+```
+
+---
+
+## 3️⃣ Member controller (odamlar bilan ishlash)
+
+"Member" — a'zo, ya'ni saytga ro'yxatdan o'tgan odam.
+
+**`src/models/Member.ts`:**
+
+```ts
+import mongoose from "mongoose";
+
+const memberSchema = new mongoose.Schema({
+  ism: { type: String, required: true },
+  email: { type: String, required: true },
+});
+
+export default mongoose.model("Member", memberSchema);
+```
+
+**`src/controllers/memberController.ts`:**
+
+```ts
+import { Request, Response } from "express";
+import Member from "../models/Member";
+
+// Hamma a'zolarni olish
+export const getMembers = async (req: Request, res: Response) => {
+  const hammasi = await Member.find();
+  res.send(hammasi);
+};
+
+// Yangi a'zo qo'shish
+export const createMember = async (req: Request, res: Response) => {
+  const yangiMember = new Member(req.body);
+  await yangiMember.save();
+  res.send(yangiMember);
+};
+```
+
+**`src/routers/memberRouter.ts`:**
+
+```ts
+import { Router } from "express";
+import { getMembers, createMember } from "../controllers/memberController";
+
+const router = Router();
+
+router.get("/", getMembers);
+router.post("/", createMember);
+
+export default router;
+```
+
+**`server.ts`ga qo'shamiz:**
+
+```ts
+import memberRouter from "./routers/memberRouter";
+app.use("/member", memberRouter);
+```
+
+> 🔍 **Nega funksiyalarni alohida faylga (controller) chiqardik?** Chunki router faqat "qaysi manzil qayerga boradi"ni bilishi kerak, **nima qilishni** bilishi shart emas. Xuddi ofitsiant taomni **o'zi pishirmaydi**, oshpazga (controller) topshiradi.
+
+---
+
+## 4️⃣ Restoran controllerni yasaymiz
+
+Endi xuddi shu qolipni **Restoran** uchun takrorlaymiz. Bu — MVC'ning eng katta kuchi: bir marta qolipni o'rgansang, istalgan mavzuga qo'llay olasan.
+
+**`src/models/Restoran.ts`:**
+
+```ts
+import mongoose from "mongoose";
+
+const restoranSchema = new mongoose.Schema({
+  nomi: { type: String, required: true },
+  manzil: { type: String, required: true },
+  reyting: { type: Number, default: 0 },
+});
+
+export default mongoose.model("Restoran", restoranSchema);
+```
+
+**`src/controllers/restoranController.ts`:**
+
+```ts
+import { Request, Response } from "express";
+import Restoran from "../models/Restoran";
+
+// Hamma restoranlarni olish
+export const getRestoranlar = async (req: Request, res: Response) => {
+  const hammasi = await Restoran.find();
+  res.send(hammasi);
+};
+
+// Bitta restoranni ID orqali olish
+export const getRestoranById = async (req: Request, res: Response) => {
+  const restoran = await Restoran.findById(req.params.id);
+  res.send(restoran);
+};
+
+// Yangi restoran qo'shish
+export const createRestoran = async (req: Request, res: Response) => {
+  const yangiRestoran = new Restoran(req.body);
+  await yangiRestoran.save();
+  res.send(yangiRestoran);
+};
+
+// Restoranni o'chirish
+export const deleteRestoran = async (req: Request, res: Response) => {
+  await Restoran.findByIdAndDelete(req.params.id);
+  res.send({ xabar: "Restoran o'chirildi" });
+};
+```
+
+**`src/routers/restoranRouter.ts`:**
+
+```ts
+import { Router } from "express";
+import {
+  getRestoranlar,
+  getRestoranById,
+  createRestoran,
+  deleteRestoran,
+} from "../controllers/restoranController";
+
+const router = Router();
+
+router.get("/", getRestoranlar);
+router.get("/:id", getRestoranById);
+router.post("/", createRestoran);
+router.delete("/:id", deleteRestoran);
+
+export default router;
+```
+
+**`server.ts`ga qo'shamiz:**
+
+```ts
+import restoranRouter from "./routers/restoranRouter";
+app.use("/restoran", restoranRouter);
+```
+
+> 🆔 **`:id` nima?** Bu — **dinamik parametr**. `/restoran/123` desa, Express `req.params.id` ichiga `"123"` ni joylab beradi. Xuddi shablonda bo'sh joy qoldirib, keyin ismini yozganga o'xshaydi.
+
+---
+
+## 🧩 Yakuniy papka ko'rinishi
+
+```
+src/
+├─ models/
+│   ├─ Member.ts
+│   └─ Restoran.ts
+├─ controllers/
+│   ├─ memberController.ts
+│   └─ restoranController.ts
+├─ routers/
+│   ├─ memberRouter.ts
+│   └─ restoranRouter.ts
+└─ server.ts
+```
+
+```ts
+// server.ts
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import mongoose from "mongoose";
+import memberRouter from "./routers/memberRouter";
+import restoranRouter from "./routers/restoranRouter";
+
+const app = express();
+app.use(express.json());
+
+mongoose.connect(process.env.MONGO_URL as string)
+  .then(() => console.log("MongoDB ga ulandik ✅"));
+
+app.use("/member", memberRouter);
+app.use("/restoran", restoranRouter);
+
+app.listen(process.env.PORT, () => console.log("Server ishga tushdi"));
+```
+
+---
+
+## 📝 O'zimni tekshiraman
+
+1. Router nima uchun kerak, hammasini `server.ts`ga yozib bo'lmaydimi?
+2. MVC'da M, V, C nimani anglatadi va har biri nima ish qiladi?
+3. Controller bilan Router orasidagi farq nima?
+4. `/restoran/:id` dagi `:id` nima uchun kerak?
+
+
+
+
+
+# | 52 | # 📘 Express va MongoDB (Mongoose orqali) ⚡ Bir qarashda
 
 | # | Mavzu | Bir gapda |
 |---|---|---|
@@ -191,9 +749,9 @@ app.listen(3000, () => console.log("Server 3000-portda"));
 
 
 
-| 51 | # 📘 Environment Variable va Yangi Database
 
-## ⚡ Bir qarashda
+
+# | 51 | # 📘 Environment Variable va Yangi Database ⚡ Bir qarashda
 
 | # | Mavzu | Bir gapda |
 |---|---|---|
@@ -380,8 +938,8 @@ app.listen(port, () => console.log(`Server ${port}-portda`));
 
 (=================================================================================================================);
 
-| 50 | # 📘 TypeScript va Patternlar
 
+# | 50 | # 📘 TypeScript va Patternlar
 **1 ta dars = 5 ta reja.** Qaytganingda shu faylni och, bir qarashda hammasi esingga tushadi.
 
 ## ⚡ Bir qarashda
