@@ -1,19 +1,38 @@
+// P Task
+
+function objectToArray(obj: any): any[] {
+    const result: any[] = [];
+    const keys = Object.keys(obj);
+
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const value = obj[key];
+        result.push([key, value]);
+    }
+
+    return result;
+}
+
+
+console.log(objectToArray({ a: 10, b: 20 }));
+
+
 
 // O TASK
 
-function calculateSumOfNumbers(arr: any[]): number {
-    let sum = 0;
+// function calculateSumOfNumbers(arr: any[]): number {
+//     let sum = 0;
 
-    for (let i = 0; i < arr.length; i++) {
-        if (typeof arr[i] === "number") {
-            sum += arr[i];
-        }
-    }
+//     for (let i = 0; i < arr.length; i++) {
+//         if (typeof arr[i] === "number") {
+//             sum += arr[i];
+//         }
+//     }
 
-    return sum;
-}
+//     return sum;
+// }
 
-console.log(calculateSumOfNumbers([10, "10", { son: 10 }, true, 35]));
+// console.log(calculateSumOfNumbers([10, "10", { son: 10 }, true, 35]));
 
 /* Project Standards:
  - Logging standards
