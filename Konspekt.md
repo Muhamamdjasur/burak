@@ -1,4 +1,475 @@
 
+# | 56 | 📘 API turlari va Adminka Signup API
+
+## ⚡ Bir qarashda
+
+| # | Mavzu | Bir gapda |
+|---|---|---|
+| 1 | API nima va turlari | Dasturlar o'rtasidagi **gaplashish yo'llari** |
+| 2 | Adminka Signup API | Admin ro'yxatdan o'tishini **boshidan oxirigacha** quramiz |
+
+---
+
+## 1️⃣ API nima va qanday turlari bor?
+
+### Eslatma
+
+O'tgan darsda ko'rgan edik: **API** — ikki dastur o'rtasidagi gaplashish tili, restoranda ofitsiant vazifasini bajaradi.
+
+### API turlari
+
+API'lar **qanday qoida (protokol)** bilan gaplashishiga qarab turlarga bo'linadi.
+
+| Tur | Qanday ishlaydi | O'xshatish |
+|---|---|---|
+| **REST API** | Har bir narsa o'z manzili (URL) va metodi (GET, POST...) bilan | Har bir bo'limga alohida eshik va yorliq |
+| **GraphQL** | Bitta manzil, lekin **aynan kerakli maydonlarni** so'raysan | Oshxonaga borib, "menga faqat tuz va pomidor kerak" deb aniq buyurtma berish |
+| **SOAP** | Eski, qat'iy qoidali, ko'proq katta korporatsiyalarda (bank tizimlari) | Rasmiy kiyimda, qat'iy tartib-qoida bilan ishlaydigan idora |
+| **WebSocket** | Ikki tomon **doimiy ochiq aloqada** turadi (chat, o'yin) | Telefon qo'ng'irog'i — ikkalangiz ham istalgan payt gapira olasiz |
+
+### Biz nima ishlatyapmiz?
+
+Burak loyihasida biz **REST API** yozyapmiz — bu eng ko'p tarqalgan va tushunish oson bo'lgan turi.
+
+### REST API'ning "5 qoidasi" (soddalashtirilgan)
+
+1. **Manzil (URL) — narsani bildiradi**: `/member`, `/restoran` (harakatni emas!)
+2. **Metod — harakatni bildiradi**: `GET`, `POST`, `PUT`, `DELETE`
+3. **Har bir so'rov mustaqil**: server oldingi so'rovni "eslab qolmaydi" (bu **stateless** deyiladi)
+4. **Javob — odatda JSON** formatida
+5. **Status kod — natijani bildiradi**: `200`, `400`, `404`...
+
+> 🔑 **Stateless** nima? Har safar do'koningizga kirganingizda kassir sizni "tanimaydi" — har safar yangidan "salom, nima kerak?" deb so'raydi. REST API ham shunday: har bir so'rov **yangi va mustaqil**, oldingisiga bog'liq emas. (Shuning uchun "login qilgan odamni eslab qolish" uchun keyinroq **token** degan narsa o'rganamiz.)
+
+---
+
+## 2️⃣ Adminka uchun Signup API
+
+Endi bilganlarimizni birlashtirib, **to'liq ishlaydigan** signup (ro'yxatdan o'tish) API yozamiz.
+
+### Nima uchun "Adminka" alohida?
+
+Oddiy `Member`dan farqli o'laroq, Admin **maxsus huquqlarga** ega bo'ladi (masalan, restoranlarni boshqarish). Shuning uchun alohida `Admin` modeli va yo'llari (routes) yasaymiz — bu ham bir turdagi **standart** (o'tgan darsda o'rgangan narsa).
+
+### Qadamlar rejasi
+
+```
+1. Admin modelini (Schema) yasash
+2. Parolni shifrlash (xavfsizlik)
+3. AdminService — signup mantig'i
+4. AdminController — so'rov/javobni boshqarish
+5. AdminRouter — manzilni ulash
+6. Postman'da sinash
+```
+
+---
+
+### 1-qadam: Admin modeli
+
+**`src/models/Admin.ts`:**
+
+```ts
+import mongoose from "mongoose";
+
+const adminSchema = new mongoose.Schema(
+  {
+    ism: {
+      type: String,
+      required: true,
+      minlength: 2,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    parol: {
+      type: String,
+      required: true,
+    },
+    lavozim: {
+      type: String,
+      enum: ["SUPER_ADMIN", "ADMIN"],
+      default: "ADMIN",
+    },
+  },
+  { timestamps: true }
+);
+
+const Admin = mongoose.model("Admin", adminSchema);
+export default Admin;
+```
+
+---
+
+### 2-qadam: Nega parolni shifrlash kerak?
+
+Agar parolni **oddiy matn** holida bazaga yozsak, bazani kim ko'rsa (yoki o'g'irlasa), hamma parollarni ko'rib oladi. Xavfli! ⚠️
+
+**Yechim: bcrypt** — parolni **qaytarib bo'lmaydigan** kodga aylantiruvchi kutubxona.
+
+Xuddi go'shtni **qiyma qilishga** o'xshaydi: qiymadan orqaga go'sht bo'lagini tiklab bo'lmaydi, lekin ikkita bir xil go'sht bo'lagi bir xil qiyma berishini solishtirib tekshirsa bo'ladi.
+
+**O'rnatish:**
+
+```bash
+npm install bcryptjs
+npm install -D @types/bcryptjs
+```
+
+---
+
+### 3-qadam: AdminService
+
+**`src/services/AdminService.ts`:**
+
+```ts
+import bcrypt from "bcryptjs";
+import Admin from "../models/Admin";
+
+class AdminService {
+  public async signup(data: { ism: string; email: string; parol: string }) {
+    // 1. Email formatini tekshirish
+    if (!data.email.includes("@")) {
+      throw new Error("Email noto'g'ri formatda");
+    }
+
+    // 2. Email band emasligini tekshirish
+    const mavjudAdmin = await Admin.findOne({ email: data.email });
+    if (mavjudAdmin) {
+      throw new Error("Bu email allaqachon ro'yxatdan o'tgan");
+    }
+
+    // 3. Parolni shifrlash
+    const shifrlanganParol = await bcrypt.hash(data.parol, 10);
+
+    // 4. Yangi admin yaratish
+    const yangiAdmin = new Admin({
+      ism: data.ism,
+      email: data.email,
+      parol: shifrlanganParol,
+    });
+
+    const saqlandi = await yangiAdmin.save();
+
+    // 5. Parolni javobdan olib tashlash (xavfsizlik uchun)
+    const natija = saqlandi.toObject();
+    delete (natija as any).parol;
+
+    return natija;
+  }
+}
+
+export default new AdminService();
+```
+
+> 🔍 **`bcrypt.hash(data.parol, 10)`** — `10` bu "murakkablik darajasi" (salt rounds). Qancha katta bo'lsa, shifrlash shuncha **xavfsiz**, lekin shuncha **sekinroq** bo'ladi. `10` — odatiy va yetarli qiymat.
+
+---
+
+### 4-qadam: AdminController
+
+**`src/controllers/adminController.ts`:**
+
+```ts
+import { Request, Response } from "express";
+import AdminService from "../services/AdminService";
+
+export const signup = async (req: Request, res: Response) => {
+  try {
+    const yangiAdmin = await AdminService.signup(req.body);
+    res.status(201).send({ data: yangiAdmin });
+  } catch (xato: any) {
+    res.status(400).send({ xabar: xato.message });
+  }
+};
+```
+
+---
+
+### 5-qadam: AdminRouter
+
+**`src/routers/adminRouter.ts`:**
+
+```ts
+import { Router } from "express";
+import { signup } from "../controllers/adminController";
+
+const router = Router();
+
+router.post("/signup", signup);
+
+export default router;
+```
+
+**`server.ts`ga qo'shamiz:**
+
+```ts
+import adminRouter from "./routers/adminRouter";
+app.use("/admin", adminRouter);
+```
+
+---
+
+### 6-qadam: Postman'da sinash
+
+```
+POST http://localhost:3000/admin/signup
+
+Body (JSON):
+{
+  "ism": "Jasur",
+  "email": "jasur@admin.com",
+  "parol": "kuchliParol123"
+}
+```
+
+**Kutilgan javob (`201`):**
+
+```json
+{
+  "data": {
+    "_id": "...",
+    "ism": "Jasur",
+    "email": "jasur@admin.com",
+    "lavozim": "ADMIN",
+    "createdAt": "...",
+    "updatedAt": "..."
+  }
+}
+```
+
+E'tibor ber: javobda **parol yo'q** — biz uni ataylab olib tashladik.
+
+**Xato holatini sinash** (bir xil email bilan yana bir marta yubor):
+
+```
+POST http://localhost:3000/admin/signup
+Body: yuqoridagi bilan bir xil
+```
+
+Kutilgan javob: `400`, `"Bu email allaqachon ro'yxatdan o'tgan"`.
+
+---
+
+## 🧩 Yakuniy oqim
+
+```
+Postman → Router (/admin/signup) → Controller → Service
+  → tekshiruv → bcrypt bilan shifrlash → Model → baza
+  → parolsiz javob qaytadi
+```
+
+---
+
+## 📝 O'zimni tekshiraman
+
+1. REST API'ning "stateless" degani nimani anglatadi?
+2. Nega parolni bazaga oddiy matn holida yozmaymiz?
+3. Service ichida nechta tekshiruv qadami bor edi, sanab ber
+4. Nega javobdan parolni olib tashladik?
+
+# | 55 | 📘 Loyiha Standardlari va API + Postman
+
+## ⚡ Bir qarashda
+
+| # | Mavzu | Bir gapda |
+|---|---|---|
+| 1 | Loyiha standardlari | Hamma bir xil **qoidada** yozsa, kod tushunarli bo'ladi |
+| 2 | API request | Dastur bilan dastur o'rtasidagi **so'rov-javob** |
+| 3 | Postman | Serverni brauzersiz **sinab ko'rish** vositasi |
+
+---
+
+## 1️⃣ Loyiha standardlari nima?
+
+### Nega kerak?
+
+Tasavvur qil: sinfda 5 ta o'quvchi bitta devoriy gazeta chiqaryapti. Har biri o'z **qo'lyozmasida** yozsa — biri lotin, biri kirill, biri katta harf bilan — o'qish qiyin bo'ladi. Lekin hammasi **bitta qoidaga** ("shu shriftda, shu o'lchamda yoz") kelishib olsa, gazeta chiroyli va tushunarli chiqadi.
+
+Dasturlashda ham xuddi shunday: bir necha dasturchi (yoki sen o'zing, lekin turli kunlarda) bitta loyihada ishlasa, **standart** bo'lmasa, kod chalkash bo'lib qoladi.
+
+### Nomlash qoidalari (naming convention)
+
+| Narsa | Uslub | Misol |
+|---|---|---|
+| Fayl nomi (model, service) | PascalCase | `Member.ts`, `MemberService.ts` |
+| O'zgaruvchi, funksiya | camelCase | `getMembers`, `yangiMember` |
+| Konstanta (o'zgarmas qiymat) | UPPER_SNAKE_CASE | `MAX_YOSH`, `DEFAULT_PORT` |
+| Interface / Type | Boshida katta harf, ko'pincha `I` bilan | `IMember`, `Member` |
+
+> 🔤 **PascalCase** — Har Bir So'z Katta Harf Bilan.
+> **camelCase** — birinchiSo'zKichik, qolganiKatta.
+
+### Papka tuzilmasi qoidasi (eslatma)
+
+O'tgan darslarda qurgan tuzilmani **standart** deb qabul qilamiz:
+
+```
+src/
+├─ models/
+├─ services/
+├─ controllers/
+├─ routers/
+└─ server.ts
+```
+
+Yangi narsa (masalan, Restoran) qo'shilganda ham **aynan shu qolipda** ketadi — bu izchillik deyiladi.
+
+### Javob formati standarti
+
+Server har doim **bir xil ko'rinishda** javob bersa, frontend dasturchi (yoki sen o'zing) osonroq ishlaydi:
+
+```ts
+// ✅ Muvaffaqiyatli javob
+res.status(200).send({
+  data: hammasi,
+});
+
+// ❌ Xato javob
+res.status(400).send({
+  xabar: "Email noto'g'ri formatda",
+});
+```
+
+Har bir controller shu ikkita ko'rinishdan birida javob qaytarsa — bu ham **standart**.
+
+### HTTP status kodlari (standart raqamlar)
+
+| Kod | Ma'nosi | Qachon ishlatiladi |
+|---|---|---|
+| `200` | OK | Hammasi muvaffaqiyatli |
+| `201` | Created | Yangi narsa yaratildi (masalan, yangi Member) |
+| `400` | Bad Request | Foydalanuvchi noto'g'ri ma'lumot yubordi |
+| `404` | Not Found | So'ralgan narsa topilmadi |
+| `500` | Server Error | Serverning o'zida xato chiqdi |
+
+> 💡 Bu raqamlar — butun dunyo dasturchilari kelishib olgan **umumiy til**. Shuning uchun `404` ni ko'rgan har qanday dasturchi, qaysi tilda yozmasin, "topilmadi" ekanini tushunadi.
+
+---
+
+## 2️⃣ API request nima?
+
+**API** (Application Programming Interface) — bu ikki dastur bir-biri bilan **gaplashish tili**.
+
+### Restoran misoli (yana!)
+
+- Sen — **mijoz** (frontend, brauzer)
+- Ofitsiant — **API**
+- Oshxona — **server**
+
+Sen ofitsiantga to'g'ridan-to'g'ri oshxonaga kirib, o'zing ovqat tayyorlamaysan. Ofitsiantga (API'ga) **so'rov** berasan: "Menga osh bering." Ofitsiant oshxonaga boradi, ovqatni olib, senga **javob** sifatida olib keladi.
+
+### Request'ning 4 turi (HTTP metodlari)
+
+| Metod | Nima qiladi | Restoranda |
+|---|---|---|
+| **GET** | Ma'lumot **olish** | "Menyuni ko'rsating" |
+| **POST** | Yangi ma'lumot **yaratish** | "Yangi buyurtma qilaman" |
+| **PUT / PATCH** | Mavjud ma'lumotni **yangilash** | "Buyurtmamga qo'shimcha qiling" |
+| **DELETE** | Ma'lumotni **o'chirish** | "Buyurtmamni bekor qiling" |
+
+### Request qanday qismlardan iborat?
+
+```
+POST /member
+Headers: { "Content-Type": "application/json" }
+Body: { "ism": "Ali", "email": "ali@mail.com" }
+```
+
+- **Manzil (URL)** — qayerga so'rov ketyapti: `/member`
+- **Metod** — nima qilish kerak: `POST`
+- **Headers** — qo'shimcha ma'lumot (masalan, "men JSON yuboryapman")
+- **Body** — asosiy yuk, ya'ni yuborilayotgan **ma'lumotning o'zi**
+
+---
+
+## 3️⃣ Postman nima?
+
+### Muammo
+
+Serveringni sinab ko'rish uchun har safar **frontend** (sayt, tugmalar) yasashing shart emas. Lekin qanday tekshirasan — server to'g'ri ishlayaptimi?
+
+### Yechim: Postman
+
+**Postman** — bu brauzersiz, to'g'ridan-to'g'ri serveringga **so'rov yuborish va javobini ko'rish** dasturi. Xuddi ofitsiantni chetlab, to'g'ridan-to'g'ri oshxona eshigidan "osh tayyor bo'ldimi?" deb so'rashga o'xshaydi — faqat sinash uchun.
+
+### O'rnatish
+
+[postman.com/downloads](https://www.postman.com/downloads/) dan yuklab olasan, bepul.
+
+### Qanday ishlatiladi?
+
+1. **Yangi so'rov (Request) yarat** — "+ New" tugmasini bos
+2. **Metodni tanla** — masalan `GET` yoki `POST`
+3. **Manzilni yoz** — `http://localhost:3000/member`
+4. Agar `POST` bo'lsa, **Body** bo'limiga o't, `raw` va `JSON` tanla, ma'lumot yoz:
+
+```json
+{
+  "ism": "Ali",
+  "email": "ali@mail.com",
+  "parol": "12345"
+}
+```
+
+5. **Send** tugmasini bos
+6. Pastda serverning **javobini** ko'rasan — status kodi (`200`, `400`...) va qaytgan ma'lumot
+
+### Nega bu foydali?
+
+- Frontend hali tayyor bo'lmasa ham, backend'ni **alohida** sinab ko'rasan
+- Xato qayerdaligini tezroq topasan: muammo backend'damimi yoki frontend'damimi
+- So'rovlarni **saqlab qo'yish** mumkin (Collection), keyin qayta-qayta ishlatasan
+
+---
+
+## 🧩 Hammasi birga: Member'ni Postman'da sinaymiz
+
+Server ishlab turgan bo'lsin (`npm run start`). Postman'da:
+
+**1. Yangi a'zo qo'shish:**
+
+```
+POST http://localhost:3000/member
+Body (JSON):
+{
+  "ism": "Vali",
+  "email": "vali@mail.com",
+  "parol": "parol123"
+}
+```
+
+Kutilgan javob: `201 Created`, yaratilgan Member ma'lumoti bilan.
+
+**2. Hamma a'zolarni ko'rish:**
+
+```
+GET http://localhost:3000/member
+```
+
+Kutilgan javob: `200 OK`, a'zolar ro'yxati bilan.
+
+**3. Xato holatini sinash:**
+
+```
+POST http://localhost:3000/member
+Body (JSON):
+{
+  "ism": "Vali"
+}
+```
+
+Email va parol yo'q — server `400 Bad Request` qaytarishi kerak (chunki `required: true`).
+
+---
+
+## 📝 O'zimni tekshiraman
+
+1. Nima uchun loyihada "standart" (qoida) bo'lishi kerak?
+2. GET va POST orasidagi farq nima?
+3. Postman nima uchun kerak, frontend yasab sinasak bo'lmaydimi?
+4. `400` va `404` status kodlari orasidagi farq nima?
 
 # | 54 | Member -- Scheme Model 📘 Service qatlami va Mongoose (Schema, Model, Query)
 
