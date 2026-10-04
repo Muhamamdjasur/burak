@@ -43,7 +43,7 @@ memberController.login = async (req: Request, res: Response) => {
 
 // memberController.goHome = (req: Request, res: Response) => {
 //     try {
-//         res.send("Home Page");
+//         res.render("home");
 //     } catch (err) {
 //         console.log("Error, goHome:", err);
 //     }
@@ -51,7 +51,7 @@ memberController.login = async (req: Request, res: Response) => {
 
 // memberController.getLogin = (req: Request, res: Response) => {
 //     try {
-//         res.send("Login Page");
+//         res.render("login");
 //     } catch (err) {
 //         console.log("Error, getLogin:", err);
 //     }
@@ -59,7 +59,7 @@ memberController.login = async (req: Request, res: Response) => {
 
 // memberController.getSignup = (req: Request, res: Response) => {
 //     try {
-//         res.send("Signup Page");
+//         res.render("signup");
 //     } catch (err) {
 //         console.log("Error, getSignup:", err);
 //     }
