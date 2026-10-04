@@ -1,20 +1,31 @@
-// P Task
-
-function objectToArray(obj: any): any[] {
-    const result: any[] = [];
+// Q Task
+function hasProperty(obj: any, key: string): boolean {
     const keys = Object.keys(obj);
-
-    for (let i = 0; i < keys.length; i++) {
-        const key = keys[i];
-        const value = obj[key];
-        result.push([key, value]);
-    }
-
+    const result = keys.includes(key);
     return result;
 }
 
 
-console.log(objectToArray({ a: 10, b: 20 }));
+console.log(hasProperty({ name: "BMW", model: "M3" }, "model"));
+console.log(hasProperty({ name: "BMW", model: "M3" }, "year"));
+
+// P Task
+
+// function objectToArray(obj: any): any[] {
+//     const result: any[] = [];
+//     const keys = Object.keys(obj);
+
+//     for (let i = 0; i < keys.length; i++) {
+//         const key = keys[i];
+//         const value = obj[key];
+//         result.push([key, value]);
+//     }
+
+//     return result;
+// }
+
+
+// console.log(objectToArray({ a: 10, b: 20 }));
 
 
 
