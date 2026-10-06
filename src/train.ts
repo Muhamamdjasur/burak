@@ -1,13 +1,33 @@
-// Q Task
-function hasProperty(obj: any, key: string): boolean {
-    const keys = Object.keys(obj);
-    const result = keys.includes(key);
-    return result;
+// # R Task
+
+function calculate(str: string): number {
+    const parts = str.split("+");
+
+    let sum = 0;
+
+    for (const part of parts) {
+        sum += Number(part);
+    }
+
+    return sum;
 }
 
+// Test:
+console.log(calculate("1+3"));
+console.log(calculate("5+10"));
+console.log(calculate("2+2+2"));
 
-console.log(hasProperty({ name: "BMW", model: "M3" }, "model"));
-console.log(hasProperty({ name: "BMW", model: "M3" }, "year"));
+
+// Q Task
+// function hasProperty(obj: any, key: string): boolean {
+//     const keys = Object.keys(obj);
+//     const result = keys.includes(key);
+//     return result;
+// }
+
+
+// console.log(hasProperty({ name: "BMW", model: "M3" }, "model"));
+// console.log(hasProperty({ name: "BMW", model: "M3" }, "year"));
 
 // P Task
 
