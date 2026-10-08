@@ -1,23 +1,43 @@
-// # R Task
+// # S Task
 
-function calculate(str: string): number {
-    const parts = str.split("+");
-
-    let sum = 0;
-
-    for (const part of parts) {
-        sum += Number(part);
+function missingNumber(numbers: number[]): number {
+    for (let i = 0; i <= numbers.length; i++) {
+        if (!numbers.includes(i)) {
+            return i;
+        }
     }
 
-    return sum;
+    return -1;
 }
 
-// Test:
-console.log(calculate("1+3"));
-console.log(calculate("5+10"));
-console.log(calculate("2+2+2"));
+console.log(missingNumber([3, 0, 1]));
+
+console.log(missingNumber([9, 6, 4, 2, 3, 5, 7, 0, 1]));
+
+// # R Task
+
+// newFunction();
 
 
+
+// function newFunction() {
+//     function calculate(str: string): number {
+//         const parts = str.split("+");
+
+//         let sum = 0;
+
+//         for (const part of parts) {
+//             sum += Number(part);
+//         }
+
+//         return sum;
+//     }
+
+//     // Test:
+//     console.log(calculate("1+3"));
+//     console.log(calculate("5+10"));
+//     console.log(calculate("2+2+2"));
+// }
 // Q Task
 // function hasProperty(obj: any, key: string): boolean {
 //     const keys = Object.keys(obj);
