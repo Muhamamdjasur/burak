@@ -12,6 +12,11 @@
         <h1>Products Page</h1>
         <div>
             <%= member.memberNick %>
+                <% products.map( function(value, key) { %>
+                    <p>
+                        <%= value.productName %> - <%= value.productSize %>
+                    </p>
+                    <% }) %>
         </div>
     </div>
 </body>
