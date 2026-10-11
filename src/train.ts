@@ -1,18 +1,28 @@
-// # S Task
+// # T Task
 
-function missingNumber(numbers: number[]): number {
-    for (let i = 0; i <= numbers.length; i++) {
-        if (!numbers.includes(i)) {
-            return i;
-        }
-    }
-
-    return -1;
+function mergeSortedArrays(arr1: number[], arr2: number[]): number[] {
+    const result = [...arr1, ...arr2];
+    result.sort((a, b) => a - b);
+    return result;
 }
 
-console.log(missingNumber([3, 0, 1]));
+console.log(mergeSortedArrays([0, 3, 4, 31], [4, 6, 30]));
 
-console.log(missingNumber([9, 6, 4, 2, 3, 5, 7, 0, 1]));
+// # S Task
+
+// function missingNumber(numbers: number[]): number {
+//     for (let i = 0; i <= numbers.length; i++) {
+//         if (!numbers.includes(i)) {
+//             return i;
+//         }
+//     }
+
+//     return -1;
+// }
+
+// console.log(missingNumber([3, 0, 1]));
+
+// console.log(missingNumber([9, 6, 4, 2, 3, 5, 7, 0, 1]));
 
 // # R Task
 
