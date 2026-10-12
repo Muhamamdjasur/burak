@@ -30,7 +30,6 @@ routerAdmin.get
 routerAdmin.post
     ("/product/create",
         restaurantController.verifyRestaurant,
-        // uploadProductImage.single("productImage"),
         makeUploader("products").array("productImage", 5),
         productController.createNewProduct
     );
@@ -39,5 +38,6 @@ routerAdmin.post
         restaurantController.verifyRestaurant,
         productController.updateChosenProduct);
 /** User */
+routerAdmin.get("/user/all", restaurantController.verifyRestaurant, restaurantController.getUsers);
 
 export default routerAdmin;
