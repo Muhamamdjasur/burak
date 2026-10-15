@@ -34,13 +34,14 @@ restaurantController.getLogin = (req: Request, res: Response) => {
         res.render("login");
     } catch (err) {
         console.log("Error, getLogin:", err);
-        res.render("login");
+        res.redirect("/admin");
     }
 };
 
 restaurantController.processSignup = async (req: AdminRequest, res: Response) => {
     try {
         console.log("processSignup");
+
         const file = req.file;
         if (!file)
             throw new Errors(HttpCode.BAD_REQUEST, Message.SOMETHING_WENT_WRONG);
