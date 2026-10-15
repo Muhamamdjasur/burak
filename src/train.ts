@@ -1,19 +1,38 @@
-// # S Task
+// # V Task
 
-function sumOdds(num: number): number {
-    let count = 0;
+function countChars(str: string): any {
+    const result: any = {};
 
-    for (let i = 0; i < num; i++) {
-        if (i % 2 === 1) {
-            count++;
+    for (const char of str) {
+        if (result[char]) {
+            result[char]++;
+        } else {
+            result[char] = 1;
         }
     }
 
-    return count;
+    return result;
 }
 
-console.log(sumOdds(9));
-console.log(sumOdds(11));
+console.log(countChars("hello"));
+
+
+// # S Task
+
+// function sumOdds(num: number): number {
+//     let count = 0;
+
+//     for (let i = 0; i < num; i++) {
+//         if (i % 2 === 1) {
+//             count++;
+//         }
+//     }
+
+//     return count;
+// }
+
+// console.log(sumOdds(9));
+// console.log(sumOdds(11));
 
 // # T Task
 
