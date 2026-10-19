@@ -2,17 +2,14 @@ console.log("Users frontend javascript file");
 
 $(function () {
   $(".member-status").on("change", function () {
-    const id = this.id;
-    const memberStatus = this.value;
-
-    console.log("id:", id);
-    console.log("memberStatus:", memberStatus);
+    const id = this.id,
+          memberStatus = this.value;
 
     if (!id) {
       console.error("User ID bo‘sh! EJS dagi select elementni tekshir.");
       return;
     }
-
+  
     axios
       .post("/admin/user/edit", {
         _id: id,
