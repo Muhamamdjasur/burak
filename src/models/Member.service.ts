@@ -54,12 +54,11 @@ class MemberService {
         const exist = await this.memberModel
             .findOne({ memberType: MemberType.RESTAURANT })
             .exec();
-        console.log("exist:", exist); // <-- shu qatorni qo'shing
-        if (exist) throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
-        // console.log("before:", input.memberPassword);
+        console.log("exist:", exist); 
+        if (exist) 
+            throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
         const salt = await bcrypt.genSalt();
         input.memberPassword = await bcrypt.hash(input.memberPassword, salt);
-        // console.log("afer:", input.memberPassword);
 
         try {
             const result = await this.memberModel.create(input);
