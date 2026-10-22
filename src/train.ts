@@ -1,16 +1,41 @@
-// # W Task
+// # X Task
 
-function chunkArray(array: number[], size: number): number[][] {
-    const result: number[][] = [];
+function countOccurrences(obj: any, str: string): number {
+  let count = 0;
 
-    for (let i = 0; i < array.length; i += size) {
-        result.push(array.slice(i, i + size));
+  for (const key in obj) {
+    if (key === str) {
+      count++;
     }
 
-    return result;
+    if (typeof obj[key] === "object" && obj[key] !== null) {
+      count += countOccurrences(obj[key], str);
+    }
+  }
+
+  return count;
 }
 
-console.log(chunkArray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3));
+console.log(
+  countOccurrences(
+    { model: "Bugatti", steer: { model: "HANKOOK", size: 30 } },
+    "model"
+  )
+);
+
+// # W Task
+
+// function chunkArray(array: number[], size: number): number[][] {
+//     const result: number[][] = [];
+
+//     for (let i = 0; i < array.length; i += size) {
+//         result.push(array.slice(i, i + size));
+//     }
+
+//     return result;
+// }
+
+// console.log(chunkArray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3));
 
 // # V Task
 
