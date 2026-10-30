@@ -5,6 +5,7 @@ import { Session } from "express-session";
 
 
 export interface Member {
+    _id(_id: any): unknown;
     memberType?: MemberType;
     memberStatus?: MemberStatus;
     memberNick: string;
