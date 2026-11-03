@@ -90,6 +90,15 @@ public async getTopUsers(): Promise<Member[]> {
 
     /** SSR */
 
+    public async getRestaurant(): Promise<Member[]> {
+        const result = await this.memberModel
+            .findOne({ memberType: MemberType.RESTAURANT })
+            .exec();
+        if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+        return result;
+    };
+
     public async processSignup(input: MemberInput): Promise<Member> {
         const exist = await this.memberModel
             .findOne({ memberType: MemberType.RESTAURANT })
