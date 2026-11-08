@@ -3,7 +3,7 @@ import { shapeIntoMongooseObjectId } from "../libs/config";
 import { ProductStatus } from "../libs/enums/product.enum";
 import { T } from "../libs/types/common";
 import { Product, ProductInput, ProductInquiry, ProductUpdateInput } from "../libs/types/product";
-import ProductModel from "../schema/product.model";
+import ProductModel from "../schema/Product.model";
 import { ObjectId } from "mongoose";
 import { Types } from "mongoose";
 import ViewService from "./View.service";

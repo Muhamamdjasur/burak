@@ -22,7 +22,7 @@ class OrderService {
         member: Member, 
         input: OrderItemInput[]
     ): Promise<Order> {
-        const memebrId = shapeIntoMongooseObjectId(member._id);
+        const memberId = shapeIntoMongooseObjectId(member._id); 
         const amount = input.reduce((accumulator: number, item: OrderItemInput) => {
             return accumulator + item.itemPrice * item.itemQuantity;
         }, 0);
@@ -32,7 +32,7 @@ class OrderService {
             const newOrder: Order = await this.orderModel.create({
                 orderTotal: amount + delivery,
                 orderDelivery: delivery,
-                memberId: member,
+                memberId: memberId, 
             });
             const orderId = newOrder._id;
             console.log("orderId:", newOrder._id);
@@ -65,7 +65,8 @@ public async getMyOrders(
     OrderInquiry
 ): Promise<Order[]> { 
     const memberId = shapeIntoMongooseObjectId(member._id);
-    const matches = {memberId: memberId, orderStatus: inquiry.orderStatus };
+    const matches: any = { memberId: memberId }; 
+    if (inquiry.orderStatus) matches.orderStatus = inquiry.orderStatus; 
 
     const result = await this.orderModel
     .aggregate([
@@ -104,6 +105,11 @@ public async getMyOrders(
         const orderId = shapeIntoMongooseObjectId(input.orderId),
         orderStatus = input.orderStatus;
 
+        const oldOrder = await this.orderModel
+            .findOne({ memberId: memberId, _id: orderId })
+            .exec();
+        if (!oldOrder) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED); 
+
         const result = await this.orderModel.findOneAndUpdate(
             {
                 memberId: memberId,
@@ -117,7 +123,7 @@ public async getMyOrders(
         if (!result) throw new Errors(HttpCode.NOT_MODIFIED, Message.UPDATE_FAILED);
 
 
-        if(orderStatus === OrderStatus.PROCESS) {
+        if(orderStatus === OrderStatus.PROCESS && oldOrder.orderStatus !== OrderStatus.PROCESS) { 
             await this.memberService.addUserPoint(member, 1);
         }
         return result;
