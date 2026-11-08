@@ -58,7 +58,7 @@ router.post(
     "/order/update", 
     memberController.verifyAuth, 
     orderController.updateOrder
-)
+);
 
 // router.get("/", memberController.goHome);
 

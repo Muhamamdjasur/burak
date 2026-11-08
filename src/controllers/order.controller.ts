@@ -48,7 +48,7 @@ orderController.getMyOrders = async (req: ExtendedRequest, res: Response) => {
 
     orderController.updateOrder = async (req: ExtendedRequest, res: Response) => {
     try {
-        console.log({});
+        console.log("updateOrder input:", req.body);
         const input: OrderUpdateInput = req.body;
         const result = await orderService.updateOrder(req.member, input);
 
