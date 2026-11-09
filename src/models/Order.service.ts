@@ -61,29 +61,34 @@ class OrderService {
     }
 
 public async getMyOrders(
-    member: Member, inquiry: 
-    OrderInquiry
+    member: Member, 
+    inquiry: OrderInquiry
 ): Promise<Order[]> { 
     const memberId = shapeIntoMongooseObjectId(member._id);
     const matches: any = { memberId: memberId }; 
     if (inquiry.orderStatus) matches.orderStatus = inquiry.orderStatus; 
 
+    // 1. page va limit son ekanligiga ishonch hosil qilish
+    const page = Number(inquiry.page) > 0 ? Number(inquiry.page) : 1;
+    const limit = Number(inquiry.limit) > 0 ? Number(inquiry.limit) : 10;
+
     const result = await this.orderModel
     .aggregate([
         { $match: matches },
         { $sort: { updatedAt: -1 } },
-        { $skip: (inquiry.page -1) * inquiry.limit },
-        { $limit: inquiry.limit },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
         {
             $lookup: {
-                from: "orderItems",
+                // MongoDB Compass'dagi aniq nomga qarang (ko'pincha kichik "orderitems")
+                from: "orderItems", 
                 localField: "_id",
                 foreignField: "orderId",
                 as: "orderItems",
             }
         },
         {
-             $lookup: {
+            $lookup: {
                 from: "products",
                 localField: "orderItems.productId",
                 foreignField: "_id",
@@ -92,6 +97,7 @@ public async getMyOrders(
         },
     ])
     .exec();
+
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
     return result;

@@ -45,10 +45,8 @@ class AuthService {
 
         try {
             const result = jwt.verify(token, this.secretToken) as Member;
-            console.log(`---- [AUTH] memberNick: ${result.memberNick} ---`);
             return result;
         } catch (err) {
-            // malformed, expired, invalid signature va h.k.
             throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
         }
     }

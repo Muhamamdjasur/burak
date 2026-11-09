@@ -14,23 +14,19 @@ const productController: T = {};
 productController.getProducts = async (req: Request, res: Response) => {
     try {
         console.log("getProducts");
-        // const query = req.query;
-        // console.log("query:", query);
-        // const params = req.params;
-        // console.log("params:", params);
         const { page, limit, order, productCollection, search } = req.query;
-        // console.log(req.query);
-        const inquery: ProductInquiry = {
-            order: String(order),
-            page: Number(page),
-            limit: Number(limit),
-        };
+       const inquiry: ProductInquiry = {
+             order: req.query.order ? String(req.query.order) : "createdAt",
+             page: Number(req.query.page) || 1,
+             limit: Number(req.query.limit) || 10,
+              // ...
+          };
         if(productCollection) 
-            inquery.productCollection = productCollection as ProductCollection
+            inquiry.productCollection = productCollection as ProductCollection
         if(search)
-            inquery.search = String(search)
+            inquiry.search = String(search)
 
-        const result = await productService.getProducts(inquery);
+        const result = await productService.getProducts(inquiry);
         
         res.status(HttpCode.OK).json(result);
     } catch (err) {
@@ -84,7 +80,7 @@ productController.createNewProduct = async (req: AdminRequest, res: Response) =>
             return ele.path.replace(/\\/g, "/");
         });
 
-        await productService.createNewPruduct(data);
+        await productService.createNewProduct(data);
 
         res.send(`<script> alert("Product Created Successfully!"); window.location.replace('/admin/product/all') </script>`);
     } catch (err) {
