@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import express from "express";
+import cors from "cors";
 import path from "path";
 import morgan from "morgan";
 import session from "express-session";
@@ -20,6 +21,7 @@ const store = new MongoDBStore({
 
 /** 1-ENTRANCE **/
 const app = express();
+app.use(cors({ credentials: true, origin: true }));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static("./uploads"));
 app.use(express.urlencoded({ extended: true }));

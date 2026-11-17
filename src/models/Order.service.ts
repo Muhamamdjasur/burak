@@ -80,7 +80,6 @@ public async getMyOrders(
         { $limit: limit },
         {
             $lookup: {
-                // MongoDB Compass'dagi aniq nomga qarang (ko'pincha kichik "orderitems")
                 from: "orderItems", 
                 localField: "_id",
                 foreignField: "orderId",
