@@ -78,7 +78,7 @@ public async getTopUsers(): Promise<Member[]> {
     const result = await this.memberModel
     .find({ 
         memberStatus: MemberStatus.ACTIVE,
-        memberPoints: { $gt: 1 }, 
+        memberPoints: { $gte: 1 }, 
     })
     .sort({ memberPoints: 'desc' })
     .limit(4)
